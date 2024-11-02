@@ -14,7 +14,8 @@ from threading import Thread
 # local imports
 import src.formattr as form
 # from src.configs_mt import AMAZON, WALMART, COSTCO, BESTBUY, scrape_ebay, scrape_target
-from src.configs_mt import WALMART, BESTBUY, scrape_ebay, scrape_target
+from src.configs_mt import WALMART, BESTBUY, COSTCO, scrape_ebay, scrape_target
+from src.scraper_ct import search_ct
 
 class search(Thread):
     def __init__(self, query, config):
@@ -38,10 +39,8 @@ class search(Thread):
         products: list
             List of items returned from website
         """
-        if self.config['site'] == 'costco':
-            self.query = form.formatSearchQueryForCostco(self.query)
-        else:
-            self.query = form.formatSearchQuery(self.query)
+        
+        self.query = form.formatSearchQuery(self.query)
         URL = self.config['url'] + self.query
 
         # fetch url
@@ -56,18 +55,43 @@ class search(Thread):
         products = []
         print(len(results))
         for res in results:
-            title = res.select(self.config['title_indicator'])
-            # price = res.select(self.config['price_indicator'])
-            price_div = res.find('div', {'data-automation-id': 'product-price'}).find('span', {'class': 'w_iUH7'})
-            price_parts = [span.get_text(strip=True) for span in price_div if span.get_text(strip=True)][0]
-            price = price_parts.split()[-1]
-            link = res.select(self.config['link_indicator'])
-            img_link = res.select(self.config['img_indicator'])
+            if self.config['site'] == 'bestbuy':
+                # Extract the title
+                title_tag = res.select_one('h4.sku-title a')
+                title = title_tag.get_text(strip=True) if title_tag else ''
 
-            product = form.formatResult(self.config['site'], title, price, link, img_link)
+                # Extract the price
+                price_tag = res.select_one('div.priceView-hero-price span')
+                price = price_tag.get_text(strip=True) if price_tag else ''
 
-            if product['title'] != '' and product['price'] != '' and product['link'] != '':
-                products.append(product)
+                # Extract the product link
+                link_tag = res.select_one('h4.sku-title a')
+                link = link_tag['href'] if link_tag else ''
+
+                # Extract the image link
+                img_tag = res.select_one('a.image-link img')
+                img_link = img_tag['src'] if img_tag else ''
+
+                # Formulate the product information
+                product = form.formatResultBestBuy(self.config['site'], title, price, link, img_link)
+
+                # Append to products if required fields are populated
+                if product['title'] and product['price'] and product['link']:
+                    products.append(product)
+            else:
+                title = res.select(self.config['title_indicator'])
+                # price = res.select(self.config['price_indicator'])
+                price_div = res.find('div', {'data-automation-id': 'product-price'}).find('span', {'class': 'w_iUH7'})
+                price_parts = [span.get_text(strip=True) for span in price_div if span.get_text(strip=True)][0]
+                price = price_parts.split()[-1]
+                link = res.select(self.config['link_indicator'])
+                img_link = res.select(self.config['img_indicator'])
+
+                product = form.formatResult(self.config['site'], title, price, link, img_link)
+
+                if product['title'] != '' and product['price'] != '' and product['link'] != '':
+                    products.append(product)
+
         self.result = products
 
     def httpsGet(self, URL):
@@ -144,14 +168,14 @@ def scrape(args, scrapers):
             i += 1
             if i == len(scrapers):
                 break
-        '''if scrapers[i] == 'costco':
-            t_cc = search(query, COSTCO)
-            t_cc.start()
+        if scrapers[i] == 'costco':
+            t_ct = search_ct(query, COSTCO)
+            t_ct.start()
             i += 1
             if i == len(scrapers):
-                break'''
+                break
         if scrapers[i] == 'ebay':
-            t_eb = scrape_ebay(query)    
+            t_eb = scrape_ebay(query)
             t_eb.start()
             i += 1
             if i == len(scrapers):
@@ -186,40 +210,45 @@ def scrape(args, scrapers):
         if scrapers[i] == 'bestbuy':
             t_bb.join()
             i += 1
+            local = t_bb.result
             for sort_by in args['sort']:
-                local = form.sortList(t_bb.result, sort_by, args['des'])[:args.get('num', len(t_bb.result))]
+                local = form.sortList(local, sort_by, args['des'])[:args.get('num', len(t_bb.result))]
             overall.extend(local)
             if i == len(scrapers):
                 break
-        '''if scrapers[i] == 'costco':
-            t_cc.join()
+        if scrapers[i] == 'costco':
+            t_ct.join()
             i += 1
+            local = t_ct.result
             for sort_by in args['sort']:
-                local = form.sortList(t_cc.result, sort_by, args['des'])[:args.get('num', len(t_cc.result))]
+                local = form.sortList(local, sort_by, args['des'])[:args.get('num', len(t_ct.result))]
             overall.extend(local)
             if i == len(scrapers):
-                break'''
+                break
         if scrapers[i] == 'ebay':
             t_eb.join()
             i += 1
+            local = t_eb.result
             for sort_by in args['sort']:
-                local = form.sortList(t_eb.result, sort_by, args['des'])[:args.get('num', len(t_eb.result))]
+                local = form.sortList(local, sort_by, args['des'])[:args.get('num', len(t_eb.result))]
             overall.extend(local)
             if i == len(scrapers):
                 break
         if scrapers[i] == 'target':
             t_tg.join()
             i += 1
+            local = t_tg.result
             for sort_by in args['sort']:
-                local = form.sortList(t_tg.result, sort_by, args['des'])[:args.get('num', len(t_tg.result))]
+                local = form.sortList(local, sort_by, args['des'])[:args.get('num', len(t_tg.result))]
             overall.extend(local)
             if i == len(scrapers):
                 break
         if scrapers[i] == 'walmart':
             t_wm.join()
             i += 1
+            local = t_wm.result
             for sort_by in args['sort']:
-                local = form.sortList(t_wm.result, sort_by, args['des'])[:args.get('num', len(t_wm.result))]
+                local = form.sortList(local, sort_by, args['des'])[:args.get('num', len(t_wm.result))]
             overall.extend(local)
             if i == len(scrapers):
                 break

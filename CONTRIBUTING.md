@@ -1,6 +1,6 @@
 # HELLO!! WELCOME TO CONTRIBUTING :)
 ## Thanks for being here and taking your time to contribute.  <br>
-The following is a set of guidelines for contributing to "Slash" and its packages, which are hosted in the [Slash-phase5](https://github.com/MeryHarikaG/slash-phase5) on GitHub. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request. <br>
+The following is a set of guidelines for contributing to "Slash" and its packages, which are hosted in the [Slash-phase6](https://github.com/DFY-NCSU/slash-phase6) on GitHub. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request. <br>
 
 # Pull Request Process
 1. Pass all the test cases that we have mentioned in the test.py.
@@ -18,41 +18,30 @@ The following is a set of guidelines for contributing to "Slash" and its package
 
 # Our Table Of Contents
 
-- .github
-    workflows
-        all github workflow yaml files
-- docs
-    proj1rubrics.md
-    
-- .gitignore
-
-- .travis.yml
-
-- CITATION.md
-
-- CODE_OF_CONDUCT.md
-- CONTRIBUTING.md
-
-- LICENSE
-
-- README.md
-
-- requirements.txt
-
-- setup.py
-
-- code
-    __init__.py
-
-- data
-    README.md
-
-- test
-    README.md
-    test.py
+```
+.
+├── CITATION.md
+├── CONTRIBUTING.md
+├── Code_Of_Conduct.md
+├── LICENSE.md
+├── Procfile
+├── Project 3
+├── README.md
+├── __init__.py
+├── __pycache__
+├── assets
+├── docs
+├── media
+├── requirements.txt
+├── setup.py
+├── slash.csv
+├── slash_user_interface.py
+├── src
+└── tests
+```
 
 ## Code of Conduct
-This project and everyone participating in it is governed by the [Code of Conduct](https://github.com/MeryHarikaG/slash-phase5/blob/main/Code_Of_Conduct.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to simlyclipse43@gmail.com.
+This project and everyone participating in it is governed by the [Code of Conduct](https://github.com/DFY-NCSU/slash-phase6/blob/main/Code_Of_Conduct.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to thefatblue@gmail.com.
 
 ## How can I Contribute
 ### Reporting Bugs 

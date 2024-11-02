@@ -47,7 +47,7 @@ def search_items_API(
     # building argument
     args = {
         'search': item_name,
-        'sort': 'pr' if order_by_col == 'price' else 'pr',  # placeholder TDB
+        'sort': ['pr'] if order_by_col == 'price' else ['cao'],  # placeholder TDB
         'des': reverse,  # placeholder TBD
         'num': listLengthInd,
         'relevant': relevant
@@ -67,6 +67,8 @@ def search_items_API(
         scrapers.append('bestbuy')
     if site == 'eb' or site == 'all':
         scrapers.append('ebay')
+    if site == 'ct' or site == 'all':
+        scrapers.append('costco')
 
     # calling scraper.scrape to fetch results
     itemList = scr.scrape(args=args, scrapers=scrapers)

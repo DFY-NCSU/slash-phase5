@@ -10,9 +10,11 @@ from datetime import datetime
 import requests
 from ebaysdk.finding import Connection
 from threading import Thread
+from bs4 import BeautifulSoup
 
 # local imports
 from src.formattr import formatTitle
+import json
 
 # configs
 WALMART = {
@@ -40,19 +42,12 @@ WALMART = {
     'title_indicator': 'h2 a span',
     'price_indicator': 'span.a-price span',
     'link_indicator': 'h2 a.a-link-normal'
-}
+}'''
 
 COSTCO = {
     'site': 'costco',
-    'url': 'https://www.costco.com/CatalogSearch?dept=All&keyword=',
-    'item_component': 'div',
-    'item_indicator': {
-        'class': 'product-tile-set'
-    },
-    'title_indicator': 'span a',
-    'price_indicator': 'div.price',
-    'link_indicator': 'span.description a',
-}'''
+    'url': 'https://www.costco.com/s?dept=All&keyword=',
+}
 
 BESTBUY = {
     'site': 'bestbuy',
@@ -67,13 +62,28 @@ BESTBUY = {
     'img_indicator': 'div.shop-sku-list-item div div a img'
 }
 
+TARGET = {
+    'site': 'target',
+    'url': 'https://www.target.com/s?searchTerm=',
+    'item_component': 'div',
+    'item_indicator': {
+        'data-item-id': True
+    },
+    'title_indicator': 'span.lh-title',
+    # 'price_indicator': 'div.lh-copy',
+    'price_indicator': {'data-automation-id': 'product-price'},
+    'link_indicator': 'a',
+    'rating_indicator': 'div.flex.items-center.mt2 span.w_iUH7',
+    'img_indicator': 'div.relative.overflow-hidden img'
+}
+
 
 # individual scrapers
 class scrape_target(Thread):
     def __init__(self, query):
         self.result = {}
         self.query = query
-        super(scrape_target,self).__init__()
+        super(scrape_target, self).__init__()
 
     def run(self):
         """Scrape Target's api for data
@@ -88,57 +98,62 @@ class scrape_target(Thread):
         items: list
             List of items from the dict
         """
-
-        api_url = 'https://redsky.target.com/redsky_aggregations/v1/web/plp_search_v1'
-
-        page = '/s/' + self.query
         params = {
-            'key': 'ff457966e64d5e877fdbad070f276d18ecec4a01',
-            'channel': 'WEB',
-            'count': '24',
-            'default_purchasability_filter': 'false',
-            'include_sponsored': 'true',
-            'keyword': self.query,
-            'offset': '0',
-            'page': page,
-            'platform': 'desktop',
-            'pricing_store_id': '3991',
-            'useragent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0',
-            'visitor_id': 'AAA',
+            'api_key': 'xxx',
+            'type': 'search',
+            'search_term': self.query,
         }
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',  # noqa: E501
-            'Accept-Encoding': 'gzip, deflate',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '0',
-            'Cache-Control': 'no-cache'
-        }
-        data = requests.get(api_url, params=params, headers=headers).json()
+        # make the http GET request to RedCircle API
+        api_result = requests.get('https://api.redcircleapi.com/request', params)
 
+        # print the JSON response from RedCircle API
+        data = api_result.json()
+
+        itemNum = len(data["search_results"])
         items = []
-        if data["data"]:
-            for p in data['data']['search']['products']:
-                item = {
-                    'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                    'title': formatTitle(p['item']['product_description']['title']),
-                    'price': '$' + str(p['price']['reg_retail']),
-                    'website': 'target',
-                    #'link': shorten_url(p['item']['enrichment']['buy_url'])
-                    'link': p['item']['enrichment']['buy_url'],
-                    'img_link': p['item']['enrichment']['images']['primary_image_url'],
-                    # 'rating': p['ratings_and_reviews']['statistics']['rating']['average']
-                }
-                items.append(item)
+        for i in range(itemNum):
+            item = {'timestamp': data['request_metadata']['processed_at'],
+                    'title': data["search_results"][i]['product']["title"],
+                    "price": data["search_results"][i]['offers']["primary"]["price"],
+                    'link': data["search_results"][i]['product']["link"],
+                    }
+            items.append(item)
+        # data = requests.get(api_url, headers=headers).json()
+        # #
+        # items = []
+        # if data["data"]:
+        #     for p in data['data']['search']['products']:
+        #         item = {
+        #             'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        #             'title': formatTitle(p['item']['product_description']['title']),
+        #             'price': '$' + str(p['price']['reg_retail']),
+        #             'website': 'target',
+        #             # 'link': shorten_url(p['item']['enrichment']['buy_url'])
+        #             'link': p['item']['enrichment']['buy_url'],
+        #             'img_link': p['item']['enrichment']['images']['primary_image_url'],
+        #             # 'rating': p['ratings_and_reviews']['statistics']['rating']['average']
+        #         }
+        #         items.append(item)
+        #
+        # # set up the request parameters
+
+        # # make the http GET request to RedCircle API
+        # api_result = json.dumps(requests.get('https://api.redcircleapi.com/request', params).json())
+        #
+        # # print the JSON response from RedCircle API
+        # itemNums = len(api_result['search_results'])
+        # items = json.dumps(api_result.json())
+        # for i in range()
+        #     items["seasrch_results"]
 
         self.result = items
+
 
 class scrape_ebay(Thread):
     def __init__(self, query):
         self.result = {}
         self.query = query
-        super(scrape_ebay,self).__init__()
+        super(scrape_ebay, self).__init__()
 
     def run(self):
         """Scrape Target's api for data
@@ -168,20 +183,19 @@ class scrape_ebay(Thread):
         items = []
         for p in data['searchResult']['item']:
             item = {
-                    'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                    'title': formatTitle(p['title']),
-                    'price': '$' + p['sellingStatus']['currentPrice']['value'],
-                    'website': 'ebay',
-                    #'link': shorten_url(p['viewItemURL'])
-                    'link': p['viewItemURL'],
-                    'img_link': p['galleryURL']
-                }
+                'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                'title': formatTitle(p['title']),
+                'price': '$' + p['sellingStatus']['currentPrice']['value'],
+                'website': 'ebay',
+                # 'link': shorten_url(p['viewItemURL'])
+                'link': p['viewItemURL'],
+                'img_link': p['galleryURL']
+            }
 
             items.append(item)
-            
 
         self.result = items
 
 
 # CONFIGS = [WALMART, AMAZON, COSTCO, BESTBUY]
-CONFIGS = [WALMART, BESTBUY]
+CONFIGS = [WALMART, BESTBUY, TARGET]
